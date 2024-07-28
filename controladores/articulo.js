@@ -132,11 +132,41 @@ const uno = async (req, res) => {
     }
 };
 
+const borrar = async (req, res) => {
+    try {
+        let id = req.params.id;
+
+        // Usamos findOneAndDelete con await y sin callback
+        let articuloBorrado = await Articulo.findOneAndDelete({ _id: id });
+
+        if (!articuloBorrado) {
+            return res.status(404).json({
+                status: 'error',
+                mensaje: 'No se ha encontrado el articulo'
+            });
+        }
+
+        return res.status(200).json({
+            status: 'success',
+            articulo: articuloBorrado,
+            mensaje: 'Articulo borrado'
+        });
+    } catch (error) {
+        return res.status(500).json({
+            status: 'error',
+            error: error,
+            mensaje: 'Error al borrar el articulo'
+        });
+    }
+};
+
+
 
 module.exports = {
     prueba,
     curso,
     crear,
     listar,
-    uno
+    uno,
+    borrar
 }
