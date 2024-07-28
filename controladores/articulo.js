@@ -1,6 +1,6 @@
-const validator = require('validator')
 const Articulo = require('../modelos/Articulo')
 const res = require('express/lib/response')
+const {validar} = require ('../helpers/validar')
 
 const prueba = (req,res) => {
     return res.status(200).json({
@@ -32,19 +32,13 @@ const crear = (req, res) => {
 
     // Validar los datos
     try {
-        let validar_titulo = !validator.isEmpty(parametros.titulo) &&
-        validator.isLength(parametros.titulo, {min: 5, max: undefined})
-
-        let validar_contenido = !validator.isEmpty(parametros.contenido)
-
-        if(!validar_titulo || !validar_contenido) {
-            throw new Error('No de ha validado la información')
-        }
+        validar(parametros)
     }catch(error) {
-        return res.status(400).json({
+        return res.status(404).json({
             status: 'error',
-            mensaje: 'Faltan datos por enviar'
-        })
+            error: error,
+            mensaje: 'Faltan campos requeridos'
+        });
     }
 
     // Crear el objeto a guardar
@@ -165,21 +159,14 @@ const editar = async (req, res) => {
         let id = req.params.id;
         let parametros = req.body
 
-        // Validar los datos
         try {
-            let validar_titulo = !validator.isEmpty(parametros.titulo) &&
-            validator.isLength(parametros.titulo, {min: 5, max: undefined})
-
-            let validar_contenido = !validator.isEmpty(parametros.contenido)
-
-            if(!validar_titulo || !validar_contenido) {
-                throw new Error('No de ha validado la información')
-            }
+            validar(parametros)
         }catch(error) {
-            return res.status(400).json({
+            return res.status(404).json({
                 status: 'error',
-                mensaje: 'Faltan datos por enviar'
-            })
+                error: error,
+                mensaje: 'Faltan campos requeridos'
+            });
         }
 
         let articuloEditado = await Articulo.findOneAndUpdate({ _id: id }, parametros, {new: true})
