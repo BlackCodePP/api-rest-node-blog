@@ -3,6 +3,7 @@ const path = require('path')
 const Articulo = require('../modelos/Articulo')
 const res = require('express/lib/response')
 const { validar } = require('../helpers/validar')
+const { error } = require('console')
 
 // Crear un articulo
 const crear = (req, res) => {
@@ -253,29 +254,51 @@ const imagen = (req, res) => {
     })
 }
 
-const buscador = (req, res) => {
-    // Sacar string de busqueda
-    let busqueda = req.params.busqueda
+// Filtrado de articulos
+const buscador = async (req, res) => {
+    try {
+        // Sacar string de búsqueda
+        let busqueda = req.params.busqueda;
 
-    // Find OR
-    Articulo.find({
-        '$or': [
+        // Find OR
+        let articulosEncontrados = await Articulo.find({
+            '$or': [
+                { 'titulo': { '$regex': busqueda, '$options': 'i' } },
+                { 'contenido': { '$regex': busqueda, '$options': 'i' } }
+            ]
+        })
+            // Ordenar
+            .sort({ fecha: -1 })
 
-        ]
+            // Ejecutar consulta
+            .exec();
 
-    })
+        // Si no se encuentran artículos
+        if (!articulosEncontrados || articulosEncontrados.length <= 0) {
+            return res.status(404).json({
+                status: 'error',
+                mensaje: 'No se han encontrado artículos'
+            });
+        }
 
-    // Orden
+        // Devolver resultado
+        return res.status(200).json({
+            status: 'success',
+            articulosEncontrados
+        });
 
-    // Ejecutar consulta
-
-    // Devolver resultado
+    } catch (error) {
+        return res.status(500).json({
+            status: 'error',
+            mensaje: 'Error en la búsqueda',
+            error: error.message
+        });
+    }
 }
 
 
+
 module.exports = {
-    prueba,
-    curso,
     crear,
     listar,
     uno,
