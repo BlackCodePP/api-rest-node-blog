@@ -13,7 +13,7 @@ const crear = (req, res) => {
 
     // Validar los datos
     try {
-        validar(parametros)
+        validar(parametros) // Helper de validacion
     } catch (error) {
         return res.status(404).json({
             status: 'error',
@@ -114,7 +114,6 @@ const borrar = async (req, res) => {
     try {
         let id = req.params.id;
 
-        // Usamos findOneAndDelete con await y sin callback
         let articuloBorrado = await Articulo.findOneAndDelete({ _id: id });
 
         if (!articuloBorrado) {
@@ -284,7 +283,7 @@ const buscador = async (req, res) => {
         // Devolver resultado
         return res.status(200).json({
             status: 'success',
-            articulosEncontrados
+            articulos: articulosEncontrados
         });
 
     } catch (error) {
@@ -295,7 +294,6 @@ const buscador = async (req, res) => {
         });
     }
 }
-
 
 
 module.exports = {
