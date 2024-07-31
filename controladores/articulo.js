@@ -1,30 +1,10 @@
+const fs = require('fs')
+const path = require('path')
 const Articulo = require('../modelos/Articulo')
 const res = require('express/lib/response')
-const {validar} = require ('../helpers/validar')
+const { validar } = require('../helpers/validar')
 
-const prueba = (req,res) => {
-    return res.status(200).json({
-        mensaje: 'Soy una accion de prueba en mi controlador de articulos'
-    })
-}
-
-const curso = (req, res) => {
-    console.log('Se ha ejecutado el endponit probando')
-
-    return res.status(200).json([
-        {
-            curso: 'Master en React',
-            autor: 'Victor Robles WEB',
-            url: 'victorroblesweb.es/master-react'
-        },
-        {
-            curso: 'Master en React',
-            autor: 'Victor Robles WEB',
-            url: 'victorroblesweb.es/master-react' 
-        }
-    ])
-}
-
+// Crear un articulo
 const crear = (req, res) => {
 
     // Recoger los datos por post
@@ -33,7 +13,7 @@ const crear = (req, res) => {
     // Validar los datos
     try {
         validar(parametros)
-    }catch(error) {
+    } catch (error) {
         return res.status(404).json({
             status: 'error',
             error: error,
@@ -46,7 +26,7 @@ const crear = (req, res) => {
 
     // Guardar el articulo en la base de datos
     articulo.save().then((articuloGuardado) => {
-        if(!articuloGuardado) {
+        if (!articuloGuardado) {
             return res.status(400).json({
                 status: 'error',
                 mensaje: 'No se ha guardado el articulo'
@@ -59,43 +39,45 @@ const crear = (req, res) => {
             articulo: articuloGuardado
         })
     })
-    .catch((error) => {
+        .catch((error) => {
             return res.status(500).json({
                 status: 'error',
                 mensaje: 'Ha ocurrido un error',
                 error: error
             })
-    })
+        })
 }
 
-const listar = async(req, res) => {
+// Mostrar todos los articulos
+const listar = async (req, res) => {
 
     try {
         let consulta = Articulo.find({})
 
-        let articulos = await consulta.sort({fecha: -1}).exec();
+        let articulos = await consulta.sort({ fecha: -1 }).exec();
 
-        if(!articulos) {
+        if (!articulos) {
             return res.status(404).json({
                 status: 'error',
                 mensaje: 'No se han encontrado articulos'
             });
         }
-        
+
         return res.status(200).json({
-            status:'succes',
+            status: 'succes',
             articulos
         });
 
-    }catch(error) {
+    } catch (error) {
         return res.status(500).json({
-            status:'error',
+            status: 'error',
             mensaje: 'Se ha producido un error',
             error
         });
     }
 }
 
+// Mostrar un articulo en concreto
 const uno = async (req, res) => {
     try {
         // Recoger id por la URL
@@ -126,6 +108,7 @@ const uno = async (req, res) => {
     }
 };
 
+// Eliminar un articulo
 const borrar = async (req, res) => {
     try {
         let id = req.params.id;
@@ -154,6 +137,7 @@ const borrar = async (req, res) => {
     }
 };
 
+// Modificar un articulo
 const editar = async (req, res) => {
     try {
         let id = req.params.id;
@@ -161,7 +145,7 @@ const editar = async (req, res) => {
 
         try {
             validar(parametros)
-        }catch(error) {
+        } catch (error) {
             return res.status(404).json({
                 status: 'error',
                 error: error,
@@ -169,7 +153,7 @@ const editar = async (req, res) => {
             });
         }
 
-        let articuloEditado = await Articulo.findOneAndUpdate({ _id: id }, parametros, {new: true})
+        let articuloEditado = await Articulo.findOneAndUpdate({ _id: id }, parametros, { new: true })
 
         if (!articuloEditado) {
             return res.status(404).json({
@@ -184,7 +168,7 @@ const editar = async (req, res) => {
             mensaje: 'Articulo editado'
         });
 
-    }catch(error) {
+    } catch (error) {
         return res.status(400).json({
             status: 'error',
             error: error,
@@ -193,6 +177,100 @@ const editar = async (req, res) => {
     }
 }
 
+// Subir una imagen a un articulo
+const subir = async (req, res) => {
+
+    // Recoger el fichero de imagen subido
+    if (!req.file && !req.files) {
+        return res.status(404).json({
+            status: 'error',
+            mensaje: 'Petición invalida'
+        })
+    }
+
+    // Nombre del archivo
+    let nombreArchivo = req.file.originalname
+
+    // Extension del archivo
+    let archivo_split = nombreArchivo.split('\.')
+    let archivo_extension = archivo_split[1]
+
+    // Comprobar extension correcta
+    if (archivo_extension != 'png' && archivo_extension != 'jpg' &&
+        archivo_extension != 'jpeg' && archivo_extension != 'gif') {
+        // Borrar archivo y dar respuesta
+        fs.unlink(req.file.path, (error) => {
+            return res.status(400).json({
+                status: 'error',
+                error: error,
+                mensaje: 'Imagen invalida'
+            })
+        })
+    } else {
+        try {
+            let id = req.params.id;
+
+            let articuloEditado = await Articulo.findOneAndUpdate({ _id: id }, { imagen: req.file.filename }, { new: true })
+
+            if (!articuloEditado) {
+                return res.status(404).json({
+                    status: 'error',
+                    mensaje: 'No se ha encontrado el articulo'
+                });
+            }
+
+            return res.status(200).json({
+                status: 'success',
+                articulo: articuloEditado,
+                mensaje: 'Articulo editado'
+            });
+
+        } catch (error) {
+            return res.status(400).json({
+                status: 'error',
+                error: error,
+                mensaje: 'Ha ocurrido un error'
+            })
+        }
+    }
+}
+
+// Buscar una imagen de un articulo
+const imagen = (req, res) => {
+    let fichero = req.params.fichero
+    let ruta_fisica = './imagenes/articulos/' + fichero
+
+    fs.stat(ruta_fisica, (error, existe) => {
+        if (existe) {
+            return res.sendFile(path.resolve(ruta_fisica))
+        } else {
+            return res.status(404).json({
+                status: 'error',
+                error: error,
+                mensaje: 'La imagen no existe'
+            })
+        }
+    })
+}
+
+const buscador = (req, res) => {
+    // Sacar string de busqueda
+    let busqueda = req.params.busqueda
+
+    // Find OR
+    Articulo.find({
+        '$or': [
+
+        ]
+
+    })
+
+    // Orden
+
+    // Ejecutar consulta
+
+    // Devolver resultado
+}
 
 
 module.exports = {
@@ -202,5 +280,8 @@ module.exports = {
     listar,
     uno,
     borrar,
-    editar
+    editar,
+    subir,
+    imagen,
+    buscador
 }
